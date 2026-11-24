@@ -13,7 +13,6 @@ object WidgetUpdater {
     fun updateAllWidgets(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
         val providers = listOf(
-            Widget2x2Provider::class.java to R.layout.widget_2x2,
             Widget4x2Provider::class.java to R.layout.widget_4x2,
             Widget4x4Provider::class.java to R.layout.widget_4x4
         )
