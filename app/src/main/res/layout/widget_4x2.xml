@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif"
-        android:text="Thứ Ba • 24/11/2026"
+        android:text="Thứ Tư • 25/11/2026"
         android:textColor="#FFFFFF"
         android:textSize="15sp"
         android:textStyle="bold" />
@@ -20,11 +20,7 @@
         android:id="@+id/tv_update_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:fontFamily="sans-serif"
-        android:text="↻ --:--"
-        android:textColor="#B3FFFFFF"
-        android:textSize="11sp" />
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/tv_lunar_date"
@@ -33,7 +29,7 @@
         android:layout_below="@id/tv_solar_date"
         android:layout_marginTop="2dp"
         android:fontFamily="sans-serif"
-        android:text="Âm: 16/10 • Ngày Nhâm Dần • Bính Ngọ"
+        android:text="Âm: 17/10 • Ngày Quý Mão • Bính Ngọ"
         android:textColor="#FF6D00"
         android:textSize="12sp"
         android:textStyle="bold" />
@@ -57,7 +53,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
-                android:text="☁ 26°C"
+                android:text="☁ 24°C"
                 android:textColor="#FFFFFF"
                 android:textSize="26sp"
                 android:textStyle="bold" />
@@ -67,7 +63,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
-                android:text="▲ 26°  ▼ 23°"
+                android:text="▲ 31°  ▼ 22°"
                 android:textColor="#CCFFFFFF"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -102,7 +98,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
-                android:text="💧 78% • 💨 14km/h"
+                android:text="💧 88% • 💨 1km/h"
                 android:textColor="#FF6D00"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -114,7 +110,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:fontFamily="sans-serif"
-        android:text="23:00 25°   00:00 24°   01:00 24°"
+        android:text="01:00 24°   02:00 23°   03:00 23°"
         android:textColor="#E6FFFFFF"
         android:textSize="11sp" />
 
