@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.LocationServices
+import com.google.android.material.switchmaterial.SwitchMaterial
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etLat: EditText
     private lateinit var etLon: EditText
     private lateinit var etSignature: EditText
+    private lateinit var swShowSeconds: SwitchMaterial
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -61,11 +63,18 @@ class MainActivity : AppCompatActivity() {
         etLat = findViewById(R.id.et_lat)
         etLon = findViewById(R.id.et_lon)
         etSignature = findViewById(R.id.et_signature)
+        swShowSeconds = findViewById(R.id.sw_show_seconds)
 
         etLocation.setText(prefs.getString("location_name", "Nghị Đức"))
         etLat.setText(prefs.getString("lat", "11.2271"))
         etLon.setText(prefs.getString("lon", "107.6671"))
         etSignature.setText(prefs.getString("signature", ""))
+        swShowSeconds.isChecked = prefs.getBoolean("show_clock_seconds", false)
+
+        swShowSeconds.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("show_clock_seconds", isChecked).apply()
+            WidgetUpdater.updateAllWidgets(this)
+        }
 
         findViewById<Button>(R.id.btn_theme_system).setOnClickListener {
             saveAndApplyTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
@@ -122,6 +131,7 @@ class MainActivity : AppCompatActivity() {
                 .putString("lon", etLon.text.toString())
                 .putString("signature", etSignature.text.toString())
                 .putString("widget_style", selectedStyle)
+                .putBoolean("show_clock_seconds", swShowSeconds.isChecked)
                 .apply()
 
             WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<WeatherWorker>().build())
