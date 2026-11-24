@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
 import android.widget.*
@@ -18,8 +19,14 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.LocationServices
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var etLocation: EditText
+    private lateinit var etLat: EditText
+    private lateinit var etLon: EditText
+    private lateinit var etSignature: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -50,10 +57,10 @@ class MainActivity : AppCompatActivity() {
 
         WeatherWorker.schedulePeriodicUpdate(this)
 
-        val etLocation = findViewById<EditText>(R.id.et_location)
-        val etLat = findViewById<EditText>(R.id.et_lat)
-        val etLon = findViewById<EditText>(R.id.et_lon)
-        val etSignature = findViewById<EditText>(R.id.et_signature)
+        etLocation = findViewById(R.id.et_location)
+        etLat = findViewById(R.id.et_lat)
+        etLon = findViewById(R.id.et_lon)
+        etSignature = findViewById(R.id.et_signature)
 
         etLocation.setText(prefs.getString("location_name", "Nghị Đức"))
         etLat.setText(prefs.getString("lat", "11.2271"))
@@ -90,16 +97,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btn_get_gps).setOnClickListener {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
+            if (!hasLocationPermission()) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                    100
+                )
                 return@setOnClickListener
             }
-            LocationServices.getFusedLocationProviderClient(this).lastLocation.addOnSuccessListener { loc ->
-                if (loc != null) {
-                    etLat.setText(loc.latitude.toString())
-                    etLon.setText(loc.longitude.toString())
-                }
-            }
+            fetchGpsAndLocationName(showToast = true, saveAndRefreshWidget = false)
         }
 
         findViewById<Button>(R.id.btn_save_update).setOnClickListener {
@@ -130,6 +136,88 @@ class MainActivity : AppCompatActivity() {
             }
             pinWidgetToHomeScreen(providerClass)
         }
+
+        if (hasLocationPermission()) {
+            fetchGpsAndLocationName(showToast = false, saveAndRefreshWidget = true)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 100 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            fetchGpsAndLocationName(showToast = true, saveAndRefreshWidget = false)
+        }
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        val fineGranted = ActivityCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarseGranted = ActivityCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        return fineGranted || coarseGranted
+    }
+
+    private fun fetchGpsAndLocationName(showToast: Boolean, saveAndRefreshWidget: Boolean) {
+        if (!hasLocationPermission()) return
+
+        LocationServices.getFusedLocationProviderClient(this).lastLocation.addOnSuccessListener { loc ->
+            if (loc != null) {
+                val latStr = String.format(Locale.US, "%.4f", loc.latitude)
+                val lonStr = String.format(Locale.US, "%.4f", loc.longitude)
+                etLat.setText(latStr)
+                etLon.setText(lonStr)
+
+                resolveAddressName(loc.latitude, loc.longitude) { resolvedName ->
+                    val finalName = if (!resolvedName.isNullOrBlank()) {
+                        resolvedName
+                    } else {
+                        etLocation.text.toString().ifBlank { "Vị trí hiện tại" }
+                    }
+                    etLocation.setText(finalName)
+
+                    if (saveAndRefreshWidget) {
+                        val prefs = getSharedPreferences("GlassWeatherPrefs", Context.MODE_PRIVATE)
+                        prefs.edit()
+                            .putString("location_name", finalName)
+                            .putString("lat", latStr)
+                            .putString("lon", lonStr)
+                            .apply()
+                        WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<WeatherWorker>().build())
+                        WidgetUpdater.updateAllWidgets(this)
+                    }
+
+                    if (showToast) {
+                        Toast.makeText(this, "Đã lấy vị trí: $finalName", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else if (showToast) {
+                Toast.makeText(this, "Chưa lấy được tọa độ GPS, hãy bật định vị và thử lại.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun resolveAddressName(lat: Double, lon: Double, onResult: (String?) -> Unit) {
+        Thread {
+            try {
+                val geocoder = Geocoder(this, Locale("vi", "VN"))
+                @Suppress("DEPRECATION")
+                val addresses = geocoder.getFromLocation(lat, lon, 1)
+                val address = addresses?.firstOrNull()
+                val placeName = address?.subAdminArea
+                    ?: address?.locality
+                    ?: address?.adminArea
+                    ?: address?.featureName
+                runOnUiThread { onResult(placeName) }
+            } catch (_: Exception) {
+                runOnUiThread { onResult(null) }
+            }
+        }.start()
     }
 
     private fun pinWidgetToHomeScreen(providerClass: Class<*>) {
