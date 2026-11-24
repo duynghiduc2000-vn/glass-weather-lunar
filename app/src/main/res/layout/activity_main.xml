@@ -411,6 +411,13 @@
                 android:text="Màu chủ đề của app" />
         </RadioGroup>
 
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/sw_show_seconds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Hiển thị giây trên đồng hồ (nhảy giây liên tục)" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
