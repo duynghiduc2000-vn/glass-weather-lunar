@@ -426,13 +426,6 @@
             android:orientation="horizontal">
 
             <RadioButton
-                android:id="@+id/rb_size_2x2"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="2 x 2" />
-
-            <RadioButton
                 android:id="@+id/rb_size_4x2"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
