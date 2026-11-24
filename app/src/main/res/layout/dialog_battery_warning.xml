@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_widget_glass_dark"
-    android:elevation="12dp"
+    android:background="@drawable/bg_dialog_glass_dark"
+    android:elevation="16dp"
     android:orientation="vertical"
     android:padding="20dp">
 
@@ -26,7 +26,7 @@
         android:fontFamily="sans-serif"
         android:lineSpacingExtra="3dp"
         android:text="Thiết bị của bạn sẽ hao pin hơn khi bật hiển thị giây"
-        android:textColor="#E6FFFFFF"
+        android:textColor="#F2FFFFFF"
         android:textSize="14sp" />
 
     <LinearLayout
@@ -50,7 +50,7 @@
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:backgroundTint="#2B2833"
+            app:backgroundTint="#242834"
             app:cornerRadius="12dp"
             app:strokeColor="#66FFFFFF"
             app:strokeWidth="1dp" />
