@@ -3,13 +3,27 @@ package com.mrwind.glassweather
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import android.widget.RemoteViews
 import androidx.core.graphics.ColorUtils
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.random.Random
 
 object WidgetUpdater {
+
+    private enum class WeatherEffectType {
+        RAIN,
+        SUN,
+        FOG,
+        NIGHT_STARS,
+        NONE
+    }
 
     fun updateAllWidgets(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
@@ -40,6 +54,7 @@ object WidgetUpdater {
         val widgetStyle = prefs.getString("widget_style", "glass_dark")
         val signature = prefs.getString("signature", "") ?: ""
         val locationName = prefs.getString("location_name", "Nghị Đức") ?: "Nghị Đức"
+        val conditionText = prefs.getString("condition", "Nhiều mây") ?: "Nhiều mây"
         val showSeconds = prefs.getBoolean("show_clock_seconds", false)
         val clockFormat = if (showSeconds) "HH:mm:ss" else "HH:mm"
 
@@ -114,7 +129,7 @@ object WidgetUpdater {
         views.setTextViewText(R.id.tv_min_max, prefs.getString("min_max", "▲ 26°  ▼ 23°"))
         views.setTextColor(R.id.tv_min_max, secondaryTextColor)
 
-        views.setTextViewText(R.id.tv_condition, prefs.getString("condition", "Nhiều mây"))
+        views.setTextViewText(R.id.tv_condition, conditionText)
         views.setTextColor(R.id.tv_condition, secondaryTextColor)
 
         views.setTextViewText(R.id.tv_humidity_wind, prefs.getString("humidity_wind", "💧 78% • 💨 14km/h"))
@@ -127,6 +142,34 @@ object WidgetUpdater {
         views.setTextViewText(R.id.tv_signature, signature)
         views.setTextColor(R.id.tv_signature, solarTextColor)
 
+        val effectType = detectEffectType(conditionText, now.get(Calendar.HOUR_OF_DAY))
+        val useDarkStroke = (widgetStyle == "glass_light") || (widgetStyle == "theme_color" && isLightThemeColor)
+        val effectBitmap = createEffectBitmap(effectType, layoutId == R.layout.widget_4x4, useDarkStroke)
+        views.setImageViewBitmap(R.id.iv_weather_effect, effectBitmap)
+
         return views
     }
-}
+
+    private fun detectEffectType(condition: String, hourOfDay: Int): WeatherEffectType {
+        val lower = condition.lowercase(Locale.ROOT)
+        val isNight = hourOfDay < 6 || hourOfDay >= 18
+
+        return when {
+            lower.contains("mưa") || lower.contains("rain") || lower.contains("dông") || lower.contains("giông") ->
+                WeatherEffectType.RAIN
+            lower.contains("sương") || lower.contains("mù") || lower.contains("fog") || lower.contains("mist") ->
+                WeatherEffectType.FOG
+            isNight && !lower.contains("nắng") ->
+                WeatherEffectType.NIGHT_STARS
+            lower.contains("nắng") || lower.contains("quang") || lower.contains("sun") || lower.contains("clear") ->
+                WeatherEffectType.SUN
+            else -> WeatherEffectType.NONE
+        }
+    }
+
+    private fun createEffectBitmap(
+        type: WeatherEffectType,
+        isLargeWidget: Boolean,
+        useDarkStroke: Boolean
+    ): Bitmap? {
+        if
