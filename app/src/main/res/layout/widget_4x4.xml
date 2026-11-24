@@ -6,6 +6,13 @@
     android:background="@drawable/bg_widget_glass_dark"
     android:padding="16dp">
 
+    <ImageView
+        android:id="@+id/iv_weather_effect"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
+
     <LinearLayout
         android:id="@+id/layout_top_header"
         android:layout_width="match_parent"
