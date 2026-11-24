@@ -15,8 +15,13 @@ object LunarCalendarHelper {
         val jd = jdFromDate(dd, mm, yy)
         val lunar = convertSolar2Lunar(dd, mm, yy, 7.0)
 
-        val dayCanChi = "${CAN[(jd + 9) \% 10]}${CHI[(jd + 1) % 12]}"
-        val yearCanChi = "${CAN[(lunar[2] + 6) \% 10]}${CHI[(lunar[2] + 8) % 12]}"
+        val canDayIdx = ((jd + 9) % 10 + 10) % 10
+        val chiDayIdx = ((jd + 1) % 12 + 12) % 12
+        val dayCanChi = "${CAN[canDayIdx]} ${CHI[chiDayIdx]}"
+
+        val canYearIdx = ((lunar[2] + 6) % 10 + 10) % 10
+        val chiYearIdx = ((lunar[2] + 8) % 12 + 12) % 12
+        val yearCanChi = "${CAN[canYearIdx]} ${CHI[chiYearIdx]}"
 
         return "Âm: ${lunar[0]}/${lunar[1]} • Ngày $dayCanChi • $yearCanChi"
     }
