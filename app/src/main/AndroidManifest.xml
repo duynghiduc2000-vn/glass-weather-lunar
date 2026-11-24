@@ -35,18 +35,6 @@
         </receiver>
 
         <receiver
-            android:name=".Widget2x2Provider"
-            android:exported="true"
-            android:label="Glass Weather 2x2">
-            <intent-filter>
-                <action android:name="android:appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_info_2x2" />
-        </receiver>
-
-        <receiver
             android:name=".Widget4x4Provider"
             android:exported="true"
             android:label="Glass Weather 4x4">
