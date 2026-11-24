@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.glassweather"
+    namespace = "com.mrwind.glassweather"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.glassweather"
+        applicationId = "com.mrwind.glassweather"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
