@@ -35,6 +35,8 @@ object WidgetUpdater {
         val widgetStyle = prefs.getString("widget_style", "glass_dark")
         val signature = prefs.getString("signature", "") ?: ""
         val locationName = prefs.getString("location_name", "Nghị Đức") ?: "Nghị Đức"
+        val showSeconds = prefs.getBoolean("show_clock_seconds", false)
+        val clockFormat = if (showSeconds) "HH:mm:ss" else "HH:mm"
 
         when (widgetStyle) {
             "transparent" -> {
@@ -51,6 +53,11 @@ object WidgetUpdater {
                 views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.bg_widget_glass_dark)
             }
         }
+
+        val clockTextColor = if (widgetStyle == "glass_light") Color.parseColor("#111827") else Color.WHITE
+        views.setCharSequence(R.id.tc_clock, "setFormat12Hour", clockFormat)
+        views.setCharSequence(R.id.tc_clock, "setFormat24Hour", clockFormat)
+        views.setTextColor(R.id.tc_clock, clockTextColor)
 
         val now = Calendar.getInstance()
         val daysVi = arrayOf("Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy")
