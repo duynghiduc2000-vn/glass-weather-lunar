@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etLon: EditText
     private lateinit var etSignature: EditText
     private lateinit var swShowSeconds: SwitchMaterial
+    private var isUpdatingSwitchProgrammatically = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -69,11 +71,34 @@ class MainActivity : AppCompatActivity() {
         etLat.setText(prefs.getString("lat", "11.2271"))
         etLon.setText(prefs.getString("lon", "107.6671"))
         etSignature.setText(prefs.getString("signature", ""))
-        swShowSeconds.isChecked = prefs.getBoolean("show_clock_seconds", false)
+
+        val savedSeconds = prefs.getBoolean("show_clock_seconds", false)
+        setSwitchCheckedSafely(savedSeconds)
 
         swShowSeconds.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("show_clock_seconds", isChecked).apply()
-            WidgetUpdater.updateAllWidgets(this)
+            if (isUpdatingSwitchProgrammatically) return@setOnCheckedChangeListener
+
+            if (isChecked) {
+                setSwitchCheckedSafely(false)
+                AlertDialog.Builder(this)
+                    .setTitle("Cảnh báo hao pin")
+                    .setMessage("Thiết bị của bạn sẽ hao pin hơn khi bật hiển thị giây")
+                    .setCancelable(false)
+                    .setPositiveButton("Đồng ý") { _, _ ->
+                        setSwitchCheckedSafely(true)
+                        prefs.edit().putBoolean("show_clock_seconds", true).apply()
+                        WidgetUpdater.updateAllWidgets(this)
+                    }
+                    .setNegativeButton("Không") { dialog, _ ->
+                        setSwitchCheckedSafely(false)
+                        prefs.edit().putBoolean("show_clock_seconds", false).apply()
+                        dialog.dismiss()
+                    }
+                    .show()
+            } else {
+                prefs.edit().putBoolean("show_clock_seconds", false).apply()
+                WidgetUpdater.updateAllWidgets(this)
+            }
         }
 
         findViewById<Button>(R.id.btn_theme_system).setOnClickListener {
@@ -150,6 +175,12 @@ class MainActivity : AppCompatActivity() {
         if (hasLocationPermission()) {
             fetchGpsAndLocationName(showToast = false, saveAndRefreshWidget = true)
         }
+    }
+
+    private fun setSwitchCheckedSafely(checked: Boolean) {
+        isUpdatingSwitchProgrammatically = true
+        swShowSeconds.isChecked = checked
+        isUpdatingSwitchProgrammatically = false
     }
 
     override fun onRequestPermissionsResult(
