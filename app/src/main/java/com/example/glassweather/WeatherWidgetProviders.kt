@@ -11,6 +11,5 @@ open class BaseWeatherWidgetProvider : AppWidgetProvider() {
     }
 }
 
-class Widget2x2Provider : BaseWeatherWidgetProvider()
 class Widget4x2Provider : BaseWeatherWidgetProvider()
 class Widget4x4Provider : BaseWeatherWidgetProvider()
