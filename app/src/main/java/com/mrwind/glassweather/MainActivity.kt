@@ -103,6 +103,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         val colorMap = mapOf(
+            // 9 màu sáng mới
+            R.id.color_sky to "#38BDF8",
+            R.id.color_aqua to "#2DD4BF",
+            R.id.color_lime to "#4ADE80",
+            R.id.color_sun to "#FACC15",
+            R.id.color_peach to "#FB923C",
+            R.id.color_rose to "#F472B6",
+            R.id.color_lilac to "#C084FC",
+            R.id.color_ice to "#67E8F9",
+            R.id.color_pearl to "#E2E8F0",
+            // 9 màu gốc
             R.id.color_ocean to "#0288D1",
             R.id.color_emerald to "#00897B",
             R.id.color_sunset to "#EF6C00",
