@@ -1,8 +1,11 @@
 package com.example.glassweather
 
 import android.Manifest
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -94,6 +97,31 @@ class MainActivity : AppCompatActivity() {
             WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<WeatherWorker>().build())
             WidgetUpdater.updateAllWidgets(this)
             Toast.makeText(this, "Đã lưu & cập nhật Widget!", Toast.LENGTH_SHORT).show()
+        }
+
+        findViewById<Button>(R.id.btn_pin_widget).setOnClickListener {
+            val providerClass = when (findViewById<RadioGroup>(R.id.rg_pin_size).checkedRadioButtonId) {
+                R.id.rb_size_2x2 -> Widget2x2Provider::class.java
+                R.id.rb_size_4x4 -> Widget4x4Provider::class.java
+                else -> Widget4x2Provider::class.java
+            }
+            pinWidgetToHomeScreen(providerClass)
+        }
+    }
+
+    private fun pinWidgetToHomeScreen(providerClass: Class<*>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val appWidgetManager = getSystemService(AppWidgetManager::class.java)
+            val myProvider = ComponentName(this, providerClass)
+            if (appWidgetManager.isRequestPinAppWidgetSupported) {
+                appWidgetManager.requestPinAppWidget(myProvider, null, null)
+            } else {
+                Toast.makeText(
+                    this,
+                    "Launcher hiện tại không hỗ trợ ghim nhanh, hãy giữ màn hình chính để thêm Widget.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
