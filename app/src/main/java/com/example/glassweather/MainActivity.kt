@@ -125,7 +125,6 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btn_pin_widget).setOnClickListener {
             val providerClass = when (findViewById<RadioGroup>(R.id.rg_pin_size).checkedRadioButtonId) {
-                R.id.rb_size_2x2 -> Widget2x2Provider::class.java
                 R.id.rb_size_4x4 -> Widget4x4Provider::class.java
                 else -> Widget4x2Provider::class.java
             }
