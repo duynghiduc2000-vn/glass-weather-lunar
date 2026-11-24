@@ -591,12 +591,20 @@
                 android:text="Màu chủ đề của app" />
         </RadioGroup>
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
+        <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/sw_show_seconds"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Hiển thị giây trên đồng hồ (nhảy giây liên tục)" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/sw_weather_effect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:checked="true"
+            android:text="Hiển thị hiệu ứng thời tiết trên widget" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -656,4 +664,3 @@
             android:textStyle="italic" />
     </LinearLayout>
 </ScrollView>
-
