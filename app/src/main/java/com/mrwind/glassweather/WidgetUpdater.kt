@@ -56,6 +56,7 @@ object WidgetUpdater {
         val locationName = prefs.getString("location_name", "Nghị Đức") ?: "Nghị Đức"
         val conditionText = prefs.getString("condition", "Nhiều mây") ?: "Nhiều mây"
         val showSeconds = prefs.getBoolean("show_clock_seconds", false)
+        val showWeatherEffect = prefs.getBoolean("show_weather_effect", true)
         val clockFormat = if (showSeconds) "HH:mm:ss" else "HH:mm"
 
         val isLightThemeColor = ColorUtils.calculateLuminance(accentColor) > 0.45
@@ -142,7 +143,11 @@ object WidgetUpdater {
         views.setTextViewText(R.id.tv_signature, signature)
         views.setTextColor(R.id.tv_signature, solarTextColor)
 
-        val effectType = detectEffectType(conditionText, now.get(Calendar.HOUR_OF_DAY))
+        val effectType = if (showWeatherEffect) {
+            detectEffectType(conditionText, now.get(Calendar.HOUR_OF_DAY))
+        } else {
+            WeatherEffectType.NONE
+        }
         val useDarkStroke = (widgetStyle == "glass_light") || (widgetStyle == "theme_color" && isLightThemeColor)
         val effectBitmap = createEffectBitmap(effectType, layoutId == R.layout.widget_4x4, useDarkStroke)
         views.setImageViewBitmap(R.id.iv_weather_effect, effectBitmap)
