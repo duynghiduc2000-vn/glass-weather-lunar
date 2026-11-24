@@ -172,4 +172,79 @@ object WidgetUpdater {
         isLargeWidget: Boolean,
         useDarkStroke: Boolean
     ): Bitmap? {
-        if
+        if (type == WeatherEffectType.NONE) return null
+
+        val width = if (isLargeWidget) 540 else 640
+        val height = if (isLargeWidget) 540 else 320
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val rng = Random(type.ordinal * 997 + width + height)
+
+        when (type) {
+            WeatherEffectType.RAIN -> {
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = if (useDarkStroke) Color.parseColor("#380284C7") else Color.parseColor("#48BAE6FD")
+                    strokeWidth = if (isLargeWidget) 3f else 2.4f
+                    strokeCap = Paint.Cap.ROUND
+                }
+                val dropCount = if (isLargeWidget) 48 else 32
+                repeat(dropCount) {
+                    val x = rng.nextFloat() * width
+                    val y = rng.nextFloat() * height
+                    val len = rng.nextFloat() * 24f + 16f
+                    canvas.drawLine(x, y, x - len * 0.28f, y + len, paint)
+                }
+            }
+
+            WeatherEffectType.SUN -> {
+                val cx = width * 0.84f
+                val cy = height * 0.18f
+                val radius = maxOf(width, height) * 0.48f
+                val glowColor = if (useDarkStroke) Color.parseColor("#38F59E0B") else Color.parseColor("#42FDE047")
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = RadialGradient(
+                        cx, cy, radius,
+                        intArrayOf(glowColor, Color.TRANSPARENT),
+                        floatArrayOf(0f, 1f),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            }
+
+            WeatherEffectType.FOG -> {
+                val bandPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = if (useDarkStroke) Color.parseColor("#2464748B") else Color.parseColor("#28E2E8F0")
+                    style = Paint.Style.FILL
+                }
+                val bands = if (isLargeWidget) 5 else 3
+                for (i in 0 until bands) {
+                    val y = height * (0.22f + i * 0.16f)
+                    val rx = width * rng.nextFloat() * 0.25f + width * 0.22f
+                    val ry = height * 0.06f
+                    val x = width * rng.nextFloat()
+                    canvas.drawOval(x - rx, y - ry, x + rx, y + ry, bandPaint)
+                }
+            }
+
+            WeatherEffectType.NIGHT_STARS -> {
+                val starPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.parseColor("#C8FFFFFF")
+                    style = Paint.Style.FILL
+                }
+                val starCount = if (isLargeWidget) 44 else 28
+                repeat(starCount) {
+                    val x = rng.nextFloat() * width
+                    val y = rng.nextFloat() * height
+                    val r = rng.nextFloat() * 2.2f + 1.1f
+                    starPaint.alpha = rng.nextInt(90, 225)
+                    canvas.drawCircle(x, y, r, starPaint)
+                }
+            }
+
+            WeatherEffectType.NONE -> Unit
+        }
+
+        return bitmap
+    }
+}
