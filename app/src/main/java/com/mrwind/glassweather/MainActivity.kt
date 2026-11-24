@@ -24,6 +24,8 @@ import androidx.work.WorkManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -161,9 +163,52 @@ class MainActivity : AppCompatActivity() {
             pinWidgetToHomeScreen(providerClass)
         }
 
+        checkAndShowAdminBirthdayDialog(prefs)
+
         if (hasLocationPermission()) {
             fetchGpsAndLocationName(showToast = false, saveAndRefreshWidget = true)
         }
+    }
+
+    private fun checkAndShowAdminBirthdayDialog(prefs: android.content.SharedPreferences) {
+        val now = Calendar.getInstance()
+        val isDec31 = now.get(Calendar.MONTH) == Calendar.DECEMBER &&
+                now.get(Calendar.DAY_OF_MONTH) == 31
+        if (!isDec31) return
+
+        val todayKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(now.time)
+        val lastShownDate = prefs.getString("last_birthday_popup_date", "")
+        if (lastShownDate == todayKey) return
+
+        prefs.edit().putString("last_birthday_popup_date", todayKey).apply()
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_admin_birthday, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val themeHex = prefs.getString("theme_color", "#FF6D00") ?: "#FF6D00"
+        val accentColor = try {
+            Color.parseColor(themeHex)
+        } catch (_: Exception) {
+            Color.parseColor("#FF6D00")
+        }
+
+        val btnOk = dialogView.findViewById<MaterialButton>(R.id.btn_bday_ok)
+        btnOk.setBackgroundColor(accentColor)
+        btnOk.setTextColor(
+            if (ColorUtils.calculateLuminance(accentColor) > 0.45) {
+                Color.parseColor("#111827")
+            } else {
+                Color.WHITE
+            }
+        )
+        btnOk.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
     }
 
     private fun showModernBatteryWarningDialog(prefs: android.content.SharedPreferences) {
