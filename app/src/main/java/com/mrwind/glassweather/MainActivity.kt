@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etLon: EditText
     private lateinit var etSignature: EditText
     private lateinit var swShowSeconds: SwitchMaterial
+    private lateinit var swWeatherEffect: SwitchMaterial
     private var isUpdatingSwitchProgrammatically = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         etLon = findViewById(R.id.et_lon)
         etSignature = findViewById(R.id.et_signature)
         swShowSeconds = findViewById(R.id.sw_show_seconds)
+        swWeatherEffect = findViewById(R.id.sw_weather_effect)
 
         etLocation.setText(prefs.getString("location_name", "Nghị Đức"))
         etLat.setText(prefs.getString("lat", "11.2271"))
@@ -79,6 +81,13 @@ class MainActivity : AppCompatActivity() {
 
         val savedSeconds = prefs.getBoolean("show_clock_seconds", false)
         setSwitchCheckedSafely(savedSeconds)
+
+        val savedWeatherEffect = prefs.getBoolean("show_weather_effect", true)
+        swWeatherEffect.isChecked = savedWeatherEffect
+        swWeatherEffect.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("show_weather_effect", isChecked).apply()
+            WidgetUpdater.updateAllWidgets(this)
+        }
 
         swShowSeconds.setOnCheckedChangeListener { _, isChecked ->
             if (isUpdatingSwitchProgrammatically) return@setOnCheckedChangeListener
@@ -159,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                 .putString("signature", etSignature.text.toString())
                 .putString("widget_style", selectedStyle)
                 .putBoolean("show_clock_seconds", swShowSeconds.isChecked)
+                .putBoolean("show_weather_effect", swWeatherEffect.isChecked)
                 .apply()
 
             WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<WeatherWorker>().build())
