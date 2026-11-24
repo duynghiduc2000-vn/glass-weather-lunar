@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
@@ -15,11 +16,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.LocationServices
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import java.util.Locale
 
@@ -80,21 +83,7 @@ class MainActivity : AppCompatActivity() {
 
             if (isChecked) {
                 setSwitchCheckedSafely(false)
-                AlertDialog.Builder(this)
-                    .setTitle("Cảnh báo hao pin")
-                    .setMessage("Thiết bị của bạn sẽ hao pin hơn khi bật hiển thị giây")
-                    .setCancelable(false)
-                    .setPositiveButton("Đồng ý") { _, _ ->
-                        setSwitchCheckedSafely(true)
-                        prefs.edit().putBoolean("show_clock_seconds", true).apply()
-                        WidgetUpdater.updateAllWidgets(this)
-                    }
-                    .setNegativeButton("Không") { dialog, _ ->
-                        setSwitchCheckedSafely(false)
-                        prefs.edit().putBoolean("show_clock_seconds", false).apply()
-                        dialog.dismiss()
-                    }
-                    .show()
+                showModernBatteryWarningDialog(prefs)
             } else {
                 prefs.edit().putBoolean("show_clock_seconds", false).apply()
                 WidgetUpdater.updateAllWidgets(this)
@@ -175,6 +164,50 @@ class MainActivity : AppCompatActivity() {
         if (hasLocationPermission()) {
             fetchGpsAndLocationName(showToast = false, saveAndRefreshWidget = true)
         }
+    }
+
+    private fun showModernBatteryWarningDialog(prefs: android.content.SharedPreferences) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_battery_warning, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val themeHex = prefs.getString("theme_color", "#FF6D00") ?: "#FF6D00"
+        val accentColor = try {
+            Color.parseColor(themeHex)
+        } catch (_: Exception) {
+            Color.parseColor("#FF6D00")
+        }
+
+        val btnNo = dialogView.findViewById<MaterialButton>(R.id.btn_dialog_no)
+        val btnYes = dialogView.findViewById<MaterialButton>(R.id.btn_dialog_yes)
+
+        btnYes.setBackgroundColor(accentColor)
+        val textOnAccent = if (ColorUtils.calculateLuminance(accentColor) > 0.45) {
+            Color.parseColor("#111827")
+        } else {
+            Color.WHITE
+        }
+        btnYes.setTextColor(textOnAccent)
+        btnNo.strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+
+        btnNo.setOnClickListener {
+            setSwitchCheckedSafely(false)
+            prefs.edit().putBoolean("show_clock_seconds", false).apply()
+            dialog.dismiss()
+        }
+
+        btnYes.setOnClickListener {
+            setSwitchCheckedSafely(true)
+            prefs.edit().putBoolean("show_clock_seconds", true).apply()
+            WidgetUpdater.updateAllWidgets(this)
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun setSwitchCheckedSafely(checked: Boolean) {
