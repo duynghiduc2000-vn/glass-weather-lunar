@@ -1,6 +1,7 @@
 package com.mrwind.glassweather
 
 import android.Manifest
+import android.app.TimePickerDialog
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -10,8 +11,12 @@ import android.graphics.drawable.ColorDrawable
 import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.TypedValue
+import android.view.Gravity
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -26,6 +31,7 @@ import androidx.work.WorkManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.slider.Slider
 import com.google.android.material.switchmaterial.SwitchMaterial
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -41,6 +47,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var swWeatherEffect: SwitchMaterial
     private lateinit var rgWidgetStyle: RadioGroup
 
+    private lateinit var sliderLunarTextSize: Slider
+    private lateinit var tvLunarSizeValue: TextView
+
+    private lateinit var btnPickTodoTime: MaterialButton
+    private lateinit var etTodoTask: EditText
+    private lateinit var btnAddTodo: MaterialButton
+    private lateinit var tvTodoCount: TextView
+    private lateinit var layoutTodoList: LinearLayout
+
     private lateinit var cardWidgetPreviewFrame: MaterialCardView
     private lateinit var previewWidgetRoot: RelativeLayout
     private lateinit var ivPreviewEffect: ImageView
@@ -55,6 +70,21 @@ class MainActivity : AppCompatActivity() {
 
     private var previewLargeFrame = false
     private var isUpdatingSwitchProgrammatically = false
+    private var selectedTodoHour = 8
+    private var selectedTodoMinute = 0
+    private val todoItems = mutableListOf<TodoItem>()
+
+    private val rotationHandler = Handler(Looper.getMainLooper())
+    private val rotationRunnable = object : Runnable {
+        override fun run() {
+            val prefs = getSharedPreferences("GlassWeatherPrefs", Context.MODE_PRIVATE)
+            refreshWidgetPreview(prefs)
+            if (todoItems.isNotEmpty() || HolidayHelper.getTodayHolidayBanner(Calendar.getInstance()) != null) {
+                WidgetUpdater.updateAllWidgets(this@MainActivity)
+            }
+            rotationHandler.postDelayed(this, 60_000L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -93,6 +123,15 @@ class MainActivity : AppCompatActivity() {
         swWeatherEffect = findViewById(R.id.sw_weather_effect)
         rgWidgetStyle = findViewById(R.id.rg_widget_style)
 
+        sliderLunarTextSize = findViewById(R.id.slider_lunar_text_size)
+        tvLunarSizeValue = findViewById(R.id.tv_lunar_size_value)
+
+        btnPickTodoTime = findViewById(R.id.btn_pick_todo_time)
+        etTodoTask = findViewById(R.id.et_todo_task)
+        btnAddTodo = findViewById(R.id.btn_add_todo)
+        tvTodoCount = findViewById(R.id.tv_todo_count)
+        layoutTodoList = findViewById(R.id.layout_todo_list)
+
         cardWidgetPreviewFrame = findViewById(R.id.card_widget_preview_frame)
         previewWidgetRoot = findViewById(R.id.preview_widget_root)
         ivPreviewEffect = findViewById(R.id.iv_preview_effect)
@@ -109,6 +148,57 @@ class MainActivity : AppCompatActivity() {
         etLat.setText(prefs.getString("lat", "11.2271"))
         etLon.setText(prefs.getString("lon", "107.6671"))
         etSignature.setText(prefs.getString("signature", ""))
+
+        val savedLunarSize = prefs.getFloat("lunar_text_size_sp", 13f).coerceIn(11f, 22f)
+        sliderLunarTextSize.value = savedLunarSize
+        tvLunarSizeValue.text = "${savedLunarSize.toInt()}sp"
+        sliderLunarTextSize.addOnChangeListener { _, value, _ ->
+            tvLunarSizeValue.text = "${value.toInt()}sp"
+            prefs.edit().putFloat("lunar_text_size_sp", value).apply()
+            refreshWidgetPreview(prefs)
+        }
+
+        todoItems.clear()
+        todoItems.addAll(TodoHelper.getTodos(this))
+        updateTodoTimeButtonText()
+        renderTodoList(prefs)
+
+        btnPickTodoTime.setOnClickListener {
+            TimePickerDialog(
+                this,
+                { _, hourOfDay, minute ->
+                    selectedTodoHour = hourOfDay
+                    selectedTodoMinute = minute
+                    updateTodoTimeButtonText()
+                },
+                selectedTodoHour,
+                selectedTodoMinute,
+                true
+            ).show()
+        }
+
+        btnAddTodo.setOnClickListener {
+            if (todoItems.size >= TodoHelper.MAX_TODOS) {
+                Toast.makeText(
+                    this,
+                    "Chỉ có thể thêm tối đa ${TodoHelper.MAX_TODOS} việc cần làm trong ngày.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+            val taskText = etTodoTask.text.toString().trim()
+            if (taskText.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập nội dung việc cần làm.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val timeStr = String.format(Locale.getDefault(), "%02d:%02d", selectedTodoHour, selectedTodoMinute)
+            todoItems.add(TodoItem(time = timeStr, task = taskText))
+            TodoHelper.saveTodos(this, todoItems)
+            etTodoTask.setText("")
+            renderTodoList(prefs)
+            WidgetUpdater.updateAllWidgets(this)
+            refreshWidgetPreview(prefs)
+        }
 
         when (prefs.getString("widget_style", "glass_dark")) {
             "transparent" -> rgWidgetStyle.check(R.id.rb_transparent)
@@ -219,6 +309,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btn_save_update).setOnClickListener {
             val selectedStyle = getSelectedWidgetStyle()
+            TodoHelper.saveTodos(this, todoItems)
 
             prefs.edit()
                 .putString("location_name", etLocation.text.toString())
@@ -226,6 +317,7 @@ class MainActivity : AppCompatActivity() {
                 .putString("lon", etLon.text.toString())
                 .putString("signature", etSignature.text.toString())
                 .putString("widget_style", selectedStyle)
+                .putFloat("lunar_text_size_sp", sliderLunarTextSize.value)
                 .putBoolean("show_clock_seconds", swShowSeconds.isChecked)
                 .putBoolean("show_weather_effect", swWeatherEffect.isChecked)
                 .apply()
@@ -249,6 +341,66 @@ class MainActivity : AppCompatActivity() {
 
         if (hasLocationPermission()) {
             fetchGpsAndLocationName(showToast = false, saveAndRefreshWidget = true)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val prefs = getSharedPreferences("GlassWeatherPrefs", Context.MODE_PRIVATE)
+        refreshWidgetPreview(prefs)
+        rotationHandler.removeCallbacks(rotationRunnable)
+        rotationHandler.postDelayed(rotationRunnable, 60_000L)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        rotationHandler.removeCallbacks(rotationRunnable)
+    }
+
+    private fun updateTodoTimeButtonText() {
+        btnPickTodoTime.text = String.format(Locale.getDefault(), "%02d:%02d", selectedTodoHour, selectedTodoMinute)
+    }
+
+    private fun renderTodoList(prefs: android.content.SharedPreferences) {
+        layoutTodoList.removeAllViews()
+        tvTodoCount.text = "${todoItems.size}/${TodoHelper.MAX_TODOS}"
+        btnAddTodo.isEnabled = todoItems.size < TodoHelper.MAX_TODOS
+
+        todoItems.forEachIndexed { index, item ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = if (index == 0) 0 else (6 * resources.displayMetrics.density).toInt()
+                }
+            }
+
+            val tvItem = TextView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                text = if (item.time.isNotBlank()) "${item.time} • ${item.task}" else item.task
+                textSize = 13.5f
+                maxLines = 2
+            }
+
+            val btnDelete = ImageButton(this).apply {
+                setImageResource(android.R.drawable.ic_menu_delete)
+                contentDescription = "Xóa việc cần làm"
+                background = null
+                setOnClickListener {
+                    todoItems.removeAt(index)
+                    TodoHelper.saveTodos(this@MainActivity, todoItems)
+                    renderTodoList(prefs)
+                    WidgetUpdater.updateAllWidgets(this@MainActivity)
+                    refreshWidgetPreview(prefs)
+                }
+            }
+
+            row.addView(tvItem)
+            row.addView(btnDelete)
+            layoutTodoList.addView(row)
         }
     }
 
@@ -311,8 +463,10 @@ class MainActivity : AppCompatActivity() {
         tvPreviewClock.text = clockStr
         tvPreviewClock.setTextColor(primaryColor)
 
+        val previewLunarSize = sliderLunarTextSize.value.coerceIn(11f, 22f)
         tvPreviewLunar.text = LunarCalendarHelper.getFullLunarString(now)
         tvPreviewLunar.setTextColor(highlightColor)
+        tvPreviewLunar.setTextSize(TypedValue.COMPLEX_UNIT_SP, previewLunarSize)
 
         tvPreviewTemp.text = "☁ ${prefs.getString("temp", "24°C")}"
         tvPreviewTemp.setTextColor(primaryColor)
