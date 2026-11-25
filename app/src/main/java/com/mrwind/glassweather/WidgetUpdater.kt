@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.ColorUtils
 import java.text.SimpleDateFormat
@@ -147,6 +148,14 @@ object WidgetUpdater {
 
         views.setTextViewText(R.id.tv_humidity_wind, prefs.getString("humidity_wind", "💧 78% • 💨 14km/h"))
         views.setTextColor(R.id.tv_humidity_wind, highlightTextColor)
+
+        val holidayText = HolidayHelper.getTodayHolidayBanner(now) ?: ""
+        views.setTextViewText(R.id.tv_holiday_banner, holidayText)
+        views.setTextColor(R.id.tv_holiday_banner, highlightTextColor)
+        views.setViewVisibility(
+            R.id.tv_holiday_banner,
+            if (holidayText.isNotEmpty()) View.VISIBLE else View.GONE
+        )
 
         views.setTextViewText(R.id.tv_hourly, prefs.getString("hourly", ""))
         views.setTextColor(R.id.tv_hourly, hourlyTextColor)
