@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.ColorUtils
@@ -131,8 +132,12 @@ object WidgetUpdater {
         views.setTextViewText(R.id.tv_solar_date, "$dayOfWeek • $dateStr")
         views.setTextColor(R.id.tv_solar_date, solarTextColor)
 
+        val defaultLunarSize = if (layoutId == R.layout.widget_4x4) 13f else 12f
+        val lunarTextSizeSp = prefs.getFloat("lunar_text_size_sp", defaultLunarSize).coerceIn(11f, 22f)
+
         views.setTextViewText(R.id.tv_lunar_date, LunarCalendarHelper.getFullLunarString(now))
         views.setTextColor(R.id.tv_lunar_date, highlightTextColor)
+        views.setTextViewTextSize(R.id.tv_lunar_date, TypedValue.COMPLEX_UNIT_SP, lunarTextSizeSp)
 
         views.setTextViewText(R.id.tv_location, locationName)
         views.setTextColor(R.id.tv_location, solarTextColor)
@@ -149,12 +154,12 @@ object WidgetUpdater {
         views.setTextViewText(R.id.tv_humidity_wind, prefs.getString("humidity_wind", "💧 78% • 💨 14km/h"))
         views.setTextColor(R.id.tv_humidity_wind, highlightTextColor)
 
-        val holidayText = HolidayHelper.getTodayHolidayBanner(now) ?: ""
-        views.setTextViewText(R.id.tv_holiday_banner, holidayText)
+        val bannerText = TodoHelper.getCurrentRotatingBannerText(context, now)
+        views.setTextViewText(R.id.tv_holiday_banner, bannerText)
         views.setTextColor(R.id.tv_holiday_banner, highlightTextColor)
         views.setViewVisibility(
             R.id.tv_holiday_banner,
-            if (holidayText.isNotEmpty()) View.VISIBLE else View.GONE
+            if (bannerText.isNotEmpty()) View.VISIBLE else View.GONE
         )
 
         views.setTextViewText(R.id.tv_hourly, prefs.getString("hourly", ""))
