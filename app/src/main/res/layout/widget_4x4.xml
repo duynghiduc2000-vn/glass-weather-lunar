@@ -34,16 +34,13 @@
             android:textSize="17sp"
             android:textStyle="bold" />
 
-        <TextClock
-            android:id="@+id/tc_clock"
+        <TextView
+            android:id="@+id/tv_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif"
-            android:format12Hour="HH:mm"
-            android:format24Hour="HH:mm"
-            android:includeFontPadding="false"
             android:maxLines="1"
-            android:padding="0dp"
+            android:text="☁ 24°C"
             android:textColor="#FFFFFF"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -76,22 +73,28 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/tv_lunar_date"
         android:layout_marginTop="16dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tv_temp"
+            <TextClock
+                android:id="@+id/tc_clock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
-                android:text="☁ 24°C"
+                android:format12Hour="HH:mm"
+                android:format24Hour="HH:mm"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:padding="0dp"
                 android:textColor="#FFFFFF"
-                android:textSize="32sp"
+                android:textSize="36sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -100,6 +103,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif"
+                android:maxLines="1"
                 android:text="▲ 31°  ▼ 22°"
                 android:textColor="#CCFFFFFF"
                 android:textSize="12sp" />
@@ -116,6 +120,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
+                android:maxLines="1"
                 android:text="Nghị Đức"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
@@ -126,6 +131,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
+                android:maxLines="1"
                 android:text="Nhiều mây"
                 android:textColor="#CCFFFFFF"
                 android:textSize="13sp" />
@@ -136,6 +142,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif"
+                android:maxLines="1"
                 android:text="💧 88% • 💨 1km/h"
                 android:textColor="#FF6D00"
                 android:textSize="12sp" />
@@ -149,6 +156,7 @@
         android:layout_below="@id/layout_middle_4x4"
         android:layout_marginTop="24dp"
         android:fontFamily="sans-serif"
+        android:maxLines="1"
         android:text="01:00 24°   02:00 23°   03:00 23°   04:00 23°"
         android:textColor="#E6FFFFFF"
         android:textSize="12sp" />
@@ -179,6 +187,7 @@
         android:layout_alignParentBottom="true"
         android:alpha="0.9"
         android:fontFamily="sans-serif"
+        android:maxLines="1"
         android:text=""
         android:textColor="#FFFFFF"
         android:textSize="11sp"
