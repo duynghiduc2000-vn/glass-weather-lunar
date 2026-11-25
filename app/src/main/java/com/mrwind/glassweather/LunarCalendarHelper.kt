@@ -7,6 +7,14 @@ object LunarCalendarHelper {
     private val CAN = arrayOf("Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý")
     private val CHI = arrayOf("Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi")
 
+    fun getLunarDayMonth(cal: Calendar = Calendar.getInstance()): Pair<Int, Int> {
+        val dd = cal.get(Calendar.DAY_OF_MONTH)
+        val mm = cal.get(Calendar.MONTH) + 1
+        val yy = cal.get(Calendar.YEAR)
+        val lunar = convertSolar2Lunar(dd, mm, yy, 7.0)
+        return lunar[0] to lunar[1]
+    }
+
     fun getFullLunarString(cal: Calendar = Calendar.getInstance()): String {
         val dd = cal.get(Calendar.DAY_OF_MONTH)
         val mm = cal.get(Calendar.MONTH) + 1
