@@ -41,6 +41,18 @@ object WidgetUpdater {
         }
     }
 
+    fun buildPreviewEffectBitmap(
+        showEffect: Boolean,
+        condition: String,
+        hourOfDay: Int,
+        isLargeWidget: Boolean,
+        useDarkStroke: Boolean
+    ): Bitmap? {
+        if (!showEffect) return null
+        val effectType = detectEffectType(condition, hourOfDay)
+        return createEffectBitmap(effectType, isLargeWidget, useDarkStroke)
+    }
+
     private fun buildRemoteViews(context: Context, layoutId: Int): RemoteViews {
         val prefs = context.getSharedPreferences("GlassWeatherPrefs", Context.MODE_PRIVATE)
         val views = RemoteViews(context.packageName, layoutId)
