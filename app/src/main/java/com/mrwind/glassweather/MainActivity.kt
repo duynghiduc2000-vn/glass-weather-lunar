@@ -10,6 +10,8 @@ import android.graphics.drawable.ColorDrawable
 import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -23,6 +25,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.switchmaterial.SwitchMaterial
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -36,6 +39,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etSignature: EditText
     private lateinit var swShowSeconds: SwitchMaterial
     private lateinit var swWeatherEffect: SwitchMaterial
+    private lateinit var rgWidgetStyle: RadioGroup
+
+    private lateinit var cardWidgetPreviewFrame: MaterialCardView
+    private lateinit var previewWidgetRoot: RelativeLayout
+    private lateinit var ivPreviewEffect: ImageView
+    private lateinit var tvPreviewDate: TextView
+    private lateinit var tvPreviewClock: TextView
+    private lateinit var tvPreviewLunar: TextView
+    private lateinit var tvPreviewTemp: TextView
+    private lateinit var tvPreviewLocation: TextView
+    private lateinit var tvPreviewCondition: TextView
+    private lateinit var tvPreviewSignature: TextView
+    private lateinit var btnPreviewSizeToggle: MaterialButton
+
+    private var previewLargeFrame = false
     private var isUpdatingSwitchProgrammatically = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,11 +91,31 @@ class MainActivity : AppCompatActivity() {
         etSignature = findViewById(R.id.et_signature)
         swShowSeconds = findViewById(R.id.sw_show_seconds)
         swWeatherEffect = findViewById(R.id.sw_weather_effect)
+        rgWidgetStyle = findViewById(R.id.rg_widget_style)
+
+        cardWidgetPreviewFrame = findViewById(R.id.card_widget_preview_frame)
+        previewWidgetRoot = findViewById(R.id.preview_widget_root)
+        ivPreviewEffect = findViewById(R.id.iv_preview_effect)
+        tvPreviewDate = findViewById(R.id.tv_preview_date)
+        tvPreviewClock = findViewById(R.id.tv_preview_clock)
+        tvPreviewLunar = findViewById(R.id.tv_preview_lunar)
+        tvPreviewTemp = findViewById(R.id.tv_preview_temp)
+        tvPreviewLocation = findViewById(R.id.tv_preview_location)
+        tvPreviewCondition = findViewById(R.id.tv_preview_condition)
+        tvPreviewSignature = findViewById(R.id.tv_preview_signature)
+        btnPreviewSizeToggle = findViewById(R.id.btn_preview_size_toggle)
 
         etLocation.setText(prefs.getString("location_name", "Nghị Đức"))
         etLat.setText(prefs.getString("lat", "11.2271"))
         etLon.setText(prefs.getString("lon", "107.6671"))
         etSignature.setText(prefs.getString("signature", ""))
+
+        when (prefs.getString("widget_style", "glass_dark")) {
+            "transparent" -> rgWidgetStyle.check(R.id.rb_transparent)
+            "glass_light" -> rgWidgetStyle.check(R.id.rb_glass_light)
+            "theme_color" -> rgWidgetStyle.check(R.id.rb_theme_color)
+            else -> rgWidgetStyle.check(R.id.rb_glass_dark)
+        }
 
         val savedSeconds = prefs.getBoolean("show_clock_seconds", false)
         setSwitchCheckedSafely(savedSeconds)
@@ -87,6 +125,7 @@ class MainActivity : AppCompatActivity() {
         swWeatherEffect.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("show_weather_effect", isChecked).apply()
             WidgetUpdater.updateAllWidgets(this)
+            refreshWidgetPreview(prefs)
         }
 
         swShowSeconds.setOnCheckedChangeListener { _, isChecked ->
@@ -98,8 +137,32 @@ class MainActivity : AppCompatActivity() {
             } else {
                 prefs.edit().putBoolean("show_clock_seconds", false).apply()
                 WidgetUpdater.updateAllWidgets(this)
+                refreshWidgetPreview(prefs)
             }
         }
+
+        rgWidgetStyle.setOnCheckedChangeListener { _, _ ->
+            refreshWidgetPreview(prefs)
+        }
+
+        btnPreviewSizeToggle.setOnClickListener {
+            previewLargeFrame = !previewLargeFrame
+            btnPreviewSizeToggle.text = if (previewLargeFrame) "Khung 4x4" else "Khung 4x2"
+            cardWidgetPreviewFrame.layoutParams = cardWidgetPreviewFrame.layoutParams.apply {
+                height = (if (previewLargeFrame) 230 else 156) * resources.displayMetrics.density.toInt()
+            }
+            refreshWidgetPreview(prefs)
+        }
+
+        val previewWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                refreshWidgetPreview(prefs)
+            }
+        }
+        etLocation.addTextChangedListener(previewWatcher)
+        etSignature.addTextChangedListener(previewWatcher)
 
         findViewById<Button>(R.id.btn_theme_system).setOnClickListener {
             saveAndApplyTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
@@ -137,6 +200,7 @@ class MainActivity : AppCompatActivity() {
             findViewById<LinearLayout>(viewId)?.setOnClickListener {
                 prefs.edit().putString("theme_color", hex).apply()
                 WidgetUpdater.updateAllWidgets(this)
+                refreshWidgetPreview(prefs)
                 Toast.makeText(this, "Đã đổi màu chủ đề", Toast.LENGTH_SHORT).show()
             }
         }
@@ -154,12 +218,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btn_save_update).setOnClickListener {
-            val selectedStyle = when (findViewById<RadioGroup>(R.id.rg_widget_style).checkedRadioButtonId) {
-                R.id.rb_transparent -> "transparent"
-                R.id.rb_glass_light -> "glass_light"
-                R.id.rb_theme_color -> "theme_color"
-                else -> "glass_dark"
-            }
+            val selectedStyle = getSelectedWidgetStyle()
 
             prefs.edit()
                 .putString("location_name", etLocation.text.toString())
@@ -173,6 +232,7 @@ class MainActivity : AppCompatActivity() {
 
             WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<WeatherWorker>().build())
             WidgetUpdater.updateAllWidgets(this)
+            refreshWidgetPreview(prefs)
             Toast.makeText(this, "Đã lưu & cập nhật Widget!", Toast.LENGTH_SHORT).show()
         }
 
@@ -184,11 +244,103 @@ class MainActivity : AppCompatActivity() {
             pinWidgetToHomeScreen(providerClass)
         }
 
+        refreshWidgetPreview(prefs)
         checkAndShowAdminBirthdayDialog(prefs)
 
         if (hasLocationPermission()) {
             fetchGpsAndLocationName(showToast = false, saveAndRefreshWidget = true)
         }
+    }
+
+    private fun getSelectedWidgetStyle(): String {
+        return when (rgWidgetStyle.checkedRadioButtonId) {
+            R.id.rb_transparent -> "transparent"
+            R.id.rb_glass_light -> "glass_light"
+            R.id.rb_theme_color -> "theme_color"
+            else -> "glass_dark"
+        }
+    }
+
+    private fun refreshWidgetPreview(prefs: android.content.SharedPreferences) {
+        val themeColorHex = prefs.getString("theme_color", "#FF6D00") ?: "#FF6D00"
+        val accentColor = try {
+            Color.parseColor(themeColorHex)
+        } catch (_: Exception) {
+            Color.parseColor("#FF6D00")
+        }
+        val widgetStyle = getSelectedWidgetStyle()
+        val isLightThemeColor = ColorUtils.calculateLuminance(accentColor) > 0.45
+        val themePrimaryText = if (isLightThemeColor) Color.parseColor("#111827") else Color.WHITE
+        val themeSecondaryText = if (isLightThemeColor) Color.parseColor("#CC111827") else Color.parseColor("#CCFFFFFF")
+        val themeHighlightText = if (isLightThemeColor) Color.parseColor("#0F172A") else Color.WHITE
+
+        when (widgetStyle) {
+            "transparent" -> previewWidgetRoot.setBackgroundColor(Color.TRANSPARENT)
+            "glass_light" -> previewWidgetRoot.setBackgroundResource(R.drawable.bg_widget_glass_light)
+            "theme_color" -> {
+                val tintedBg = Color.argb(215, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+                previewWidgetRoot.setBackgroundColor(tintedBg)
+            }
+            else -> previewWidgetRoot.setBackgroundResource(R.drawable.bg_widget_glass_dark)
+        }
+
+        val primaryColor = when (widgetStyle) {
+            "glass_light" -> Color.parseColor("#111827")
+            "theme_color" -> themePrimaryText
+            else -> Color.WHITE
+        }
+        val secondaryColor = when (widgetStyle) {
+            "glass_light" -> Color.parseColor("#CC111827")
+            "theme_color" -> themeSecondaryText
+            else -> Color.parseColor("#CCFFFFFF")
+        }
+        val highlightColor = when (widgetStyle) {
+            "theme_color" -> themeHighlightText
+            else -> accentColor
+        }
+
+        val now = Calendar.getInstance()
+        val daysVi = arrayOf("Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy")
+        val dayOfWeek = daysVi[now.get(Calendar.DAY_OF_WEEK) - 1]
+        val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(now.time)
+        val pattern = if (swShowSeconds.isChecked) "HH:mm:ss" else "HH:mm"
+        val clockStr = SimpleDateFormat(pattern, Locale.getDefault()).format(now.time)
+
+        tvPreviewDate.text = "$dayOfWeek • $dateStr"
+        tvPreviewDate.setTextColor(primaryColor)
+        tvPreviewClock.text = clockStr
+        tvPreviewClock.setTextColor(primaryColor)
+
+        tvPreviewLunar.text = LunarCalendarHelper.getFullLunarString(now)
+        tvPreviewLunar.setTextColor(highlightColor)
+
+        tvPreviewTemp.text = "☁ ${prefs.getString("temp", "24°C")}"
+        tvPreviewTemp.setTextColor(primaryColor)
+
+        val locText = etLocation.text.toString().ifBlank {
+            prefs.getString("location_name", "Nghị Đức") ?: "Nghị Đức"
+        }
+        tvPreviewLocation.text = locText
+        tvPreviewLocation.setTextColor(primaryColor)
+
+        val condText = prefs.getString("condition", "Nhiều mây") ?: "Nhiều mây"
+        tvPreviewCondition.text = condText
+        tvPreviewCondition.setTextColor(secondaryColor)
+
+        val sigText = etSignature.text.toString()
+        tvPreviewSignature.text = sigText
+        tvPreviewSignature.setTextColor(primaryColor)
+
+        val useDarkStroke = (widgetStyle == "glass_light") || (widgetStyle == "theme_color" && isLightThemeColor)
+        ivPreviewEffect.setImageBitmap(
+            WidgetUpdater.buildPreviewEffectBitmap(
+                showEffect = swWeatherEffect.isChecked,
+                condition = condText,
+                hourOfDay = now.get(Calendar.HOUR_OF_DAY),
+                isLargeWidget = previewLargeFrame,
+                useDarkStroke = useDarkStroke
+            )
+        )
     }
 
     private fun checkAndShowAdminBirthdayDialog(prefs: android.content.SharedPreferences) {
@@ -263,6 +415,7 @@ class MainActivity : AppCompatActivity() {
         btnNo.setOnClickListener {
             setSwitchCheckedSafely(false)
             prefs.edit().putBoolean("show_clock_seconds", false).apply()
+            refreshWidgetPreview(prefs)
             dialog.dismiss()
         }
 
@@ -270,6 +423,7 @@ class MainActivity : AppCompatActivity() {
             setSwitchCheckedSafely(true)
             prefs.edit().putBoolean("show_clock_seconds", true).apply()
             WidgetUpdater.updateAllWidgets(this)
+            refreshWidgetPreview(prefs)
             dialog.dismiss()
         }
 
@@ -330,6 +484,7 @@ class MainActivity : AppCompatActivity() {
                             .apply()
                         WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<WeatherWorker>().build())
                         WidgetUpdater.updateAllWidgets(this)
+                        refreshWidgetPreview(prefs)
                     }
 
                     if (showToast) {
