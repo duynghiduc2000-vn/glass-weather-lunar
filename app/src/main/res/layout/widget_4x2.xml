@@ -141,6 +141,24 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/tv_holiday_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/layout_middle"
+        android:layout_above="@id/tv_hourly"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif"
+        android:gravity="center_vertical"
+        android:maxLines="1"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="12.5sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/tv_hourly"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
